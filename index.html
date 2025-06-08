@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <title>Katalog Modeli 3D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabase = supabase.createClient(
+      'https://dnkjgvzaqawinoedrhho.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRua2pndnphcWF3aW5vZWRyaGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzOTMzOTcsImV4cCI6MjA2NDk2OTM5N30.lVVD_7KtSYd0dftxpLRdnRU3QpLbxKGMMAWlfZFz-9s'
+    );
+  </script>
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
     import { OrbitControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/OrbitControls.js';
@@ -90,12 +97,7 @@
 </head>
 <body>
   <h1>Katalog Modeli 3D</h1>
-  <div class="gallery">
-    <!-- Przykładowe dane; docelowo generowane z Supabase -->
-    <img src="https://example.com/image1.jpg" onclick="openImage(this.src)" alt="Obraz 1">
-    <button onclick="open3D('https://example.com/model1.stl')">Zobacz model STL</button>
-    <button onclick="open3D('https://example.com/model2.3mf')">Zobacz model 3MF</button>
-  </div>
+  <div class="gallery" id="gallery"></div>
 
   <div class="viewer-container" id="modelViewer">
     <div class="close-btn" onclick="closeViewer()">&times;</div>
@@ -122,6 +124,48 @@
       document.getElementById("modelViewer").classList.remove("active");
       document.getElementById("imageViewer").classList.remove("active");
     }
+
+    async function fetchAndRenderCatalog() {
+      const { data, error } = await supabase
+        .from('models_catalog')
+        .select('*');
+
+      if (error) {
+        console.error('Błąd podczas pobierania danych:', error);
+        return;
+      }
+
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '';
+      const grouped = {};
+
+      data.forEach(item => {
+        const key = `${item.category} - ${item.product}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(item);
+      });
+
+      for (const [groupName, items] of Object.entries(grouped)) {
+        const section = document.createElement('div');
+        section.innerHTML = `<h3>${groupName}</h3>`;
+
+        items.forEach(item => {
+          const img = document.createElement('img');
+          img.src = item.image_url;
+          img.onclick = () => openImage(item.image_url);
+          section.appendChild(img);
+
+          const btn = document.createElement('button');
+          btn.textContent = `Zobacz model ${item.model_format.toUpperCase()}`;
+          btn.onclick = () => open3D(item.model_url);
+          section.appendChild(btn);
+        });
+
+        gallery.appendChild(section);
+      }
+    }
+
+    fetchAndRenderCatalog();
   </script>
 </body>
 </html>
