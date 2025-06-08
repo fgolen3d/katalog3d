@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Katalog Modeli 3D</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.155.0/examples/jsm/controls/OrbitControls.js';
+    import { STLLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/STLLoader.js';
+    import { ThreeMFLoader } from 'https://unpkg.com/three@0.155.0/examples/jsm/loaders/3MFLoader.js';
+
+    window.load3DModel = async function (url) {
+      const container = document.getElementById("viewer");
+      container.innerHTML = "";
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+
+      let loader;
+      if (url.endsWith(".stl")) {
+        loader = new STLLoader();
+      } else if (url.endsWith(".3mf")) {
+        loader = new ThreeMFLoader();
+      } else {
+        alert("Nieobsługiwany format pliku.");
+        return;
+      }
+
+      loader.load(url, geometry => {
+        const material = new THREE.MeshNormalMaterial();
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+        camera.position.z = 100;
+
+        function animate() {
+          requestAnimationFrame(animate);
+          controls.update();
+          renderer.render(scene, camera);
+        }
+        animate();
+      });
+    };
+  </script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .gallery img {
+      width: 100px;
+      height: auto;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .viewer-container {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .viewer-container.active {
+      display: flex;
+    }
+    #viewer {
+      width: 80vw;
+      height: 80vh;
+    }
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Katalog Modeli 3D</h1>
+  <div class="gallery">
+    <!-- Przykładowe dane; docelowo generowane z Supabase -->
+    <img src="https://example.com/image1.jpg" onclick="openImage(this.src)" alt="Obraz 1">
+    <button onclick="open3D('https://example.com/model1.stl')">Zobacz model STL</button>
+    <button onclick="open3D('https://example.com/model2.3mf')">Zobacz model 3MF</button>
+  </div>
+
+  <div class="viewer-container" id="modelViewer">
+    <div class="close-btn" onclick="closeViewer()">&times;</div>
+    <div id="viewer"></div>
+  </div>
+
+  <div class="viewer-container" id="imageViewer">
+    <div class="close-btn" onclick="closeViewer()">&times;</div>
+    <img id="fullImage" src="" style="max-width: 90vw; max-height: 90vh;">
+  </div>
+
+  <script>
+    function openImage(src) {
+      document.getElementById("imageViewer").classList.add("active");
+      document.getElementById("fullImage").src = src;
+    }
+
+    function open3D(url) {
+      document.getElementById("modelViewer").classList.add("active");
+      load3DModel(url);
+    }
+
+    function closeViewer() {
+      document.getElementById("modelViewer").classList.remove("active");
+      document.getElementById("imageViewer").classList.remove("active");
+    }
+  </script>
+</body>
+</html>
