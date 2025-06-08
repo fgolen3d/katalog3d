@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    const supabase = supabase.createClient(
+    const supabase = window.supabase.createClient(
       'https://dnkjgvzaqawinoedrhho.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRua2pndnphcWF3aW5vZWRyaGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkzOTMzOTcsImV4cCI6MjA2NDk2OTM5N30.lVVD_7KtSYd0dftxpLRdnRU3QpLbxKGMMAWlfZFz-9s'
     );
@@ -97,6 +97,11 @@
 </head>
 <body>
   <h1>Katalog Modeli 3D</h1>
+  <label for="categoryFilter">Filtruj po katalogu:</label>
+  <select id="categoryFilter" onchange="fetchAndRenderCatalog()">
+    <option value="">Wszystkie</option>
+  </select>
+
   <div class="gallery" id="gallery"></div>
 
   <div class="viewer-container" id="modelViewer">
@@ -117,7 +122,7 @@
 
     function open3D(url) {
       document.getElementById("modelViewer").classList.add("active");
-      load3DModel(url);
+      window.load3DModel(url);
     }
 
     function closeViewer() {
@@ -126,9 +131,12 @@
     }
 
     async function fetchAndRenderCatalog() {
-      const { data, error } = await supabase
-        .from('models_catalog')
-        .select('*');
+      const filter = document.getElementById('categoryFilter').value;
+      let query = supabase.from('models_catalog').select('*');
+      if (filter) {
+        query = query.eq('category', filter);
+      }
+      const { data, error } = await query;
 
       if (error) {
         console.error('Błąd podczas pobierania danych:', error);
@@ -165,7 +173,29 @@
       }
     }
 
-    fetchAndRenderCatalog();
+    async function populateCategories() {
+      const { data, error } = await supabase
+        .from('models_catalog')
+        .select('category')
+        .order('category', { ascending: true });
+
+      if (error) {
+        console.error('Błąd podczas pobierania kategorii:', error);
+        return;
+      }
+
+      const categories = [...new Set(data.map(item => item.category))];
+      const filter = document.getElementById('categoryFilter');
+
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        filter.appendChild(option);
+      });
+    }
+
+    populateCategories().then(fetchAndRenderCatalog);
   </script>
 </body>
 </html>
